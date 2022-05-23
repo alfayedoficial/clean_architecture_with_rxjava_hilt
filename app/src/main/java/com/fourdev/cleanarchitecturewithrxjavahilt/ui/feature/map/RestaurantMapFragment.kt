@@ -1,5 +1,6 @@
 package com.fourdev.cleanarchitecturewithrxjavahilt.ui.feature.map
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import androidx.fragment.app.Fragment
@@ -17,7 +18,9 @@ import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.BaseFragment
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.DataState
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.navigation.AppNavigator
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.navigation.Screen
+import com.fourdev.cleanarchitecturewithrxjavahilt.data.apiResponse.VenuesItem
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.LocationDto
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.entity.Restaurant
 import com.fourdev.cleanarchitecturewithrxjavahilt.ui.feature.map.viewModel.MapViewModel
 
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -41,32 +44,13 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
     lateinit var appNavigator: AppNavigator
 
     private val mViewModel: MapViewModel by viewModels()
+    private var mMap: GoogleMap? = null
 
     private val callback = OnMapReadyCallback { googleMap ->
-        /**
-         * Manipulates the map once available.
-         * This callback is triggered when the map is ready to be used.
-         * This is where we can add markers or lines, add listeners or move the camera.
-         * In this case, we just add a marker near Sydney, Australia.
-         * If Google Play services is not installed on the device, the user will be prompted to
-         * install it inside the SupportMapFragment. This method will only be triggered once the
-         * user has installed Google Play services and returned to the app.
-         */
-        val sydney = LatLng(-34.0, 151.0)
-        googleMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        mMap = googleMap
+        googleMap.setMinZoomPreference(12f)
         googleMap.setOnMarkerClickListener(this)
         observerRestaurants()
-    }
-
-    private fun observerRestaurants() {
-            mViewModel.restaurantsState.observe(viewLifecycleOwner) {
-                when(it) {
-                    is DataState.Success->{}
-                    is DataState.Error -> {}
-                    is DataState.Loading -> {}
-                }
-            }
     }
 
     private val locationSettingScreen = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -160,6 +144,7 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
         applicationSettingsScreen.launch(onApplicationSettings)
     }
 
+    @SuppressLint("NeedOnRequestPermissionsResult")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -170,6 +155,25 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
     override fun onMarkerClick(p0: Marker): Boolean {
         appNavigator.navigateTo(Screen.DETAIL)
         return false
+    }
+
+    private fun observerRestaurants() {
+        mViewModel.restaurantsState.observe(viewLifecycleOwner) {
+            when(it) {
+                is DataState.Success->{renderMarkers(it.data)}
+                is DataState.Error -> {}
+                is DataState.Loading -> {}
+            }
+        }
+    }
+
+    private fun renderMarkers(venuesItems :List<Restaurant>){
+        venuesItems.forEach { venue ->
+           val loc = LatLng(venue.latitude!!, venue.longitude!!)
+            mMap?.addMarker(MarkerOptions().position(loc).title(venue.name))
+            mMap?.moveCamera(CameraUpdateFactory.newLatLng(loc))
+
+        }
     }
 
 }

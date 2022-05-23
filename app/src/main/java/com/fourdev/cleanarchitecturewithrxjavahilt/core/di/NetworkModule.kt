@@ -38,7 +38,7 @@ object NetworkModule {
 
     @Singleton
     @Provides
-    fun providesAuthInterceptor()= AuthInterceptor()
+    fun providesAuthInterceptor() = AuthInterceptor()
 
     @Singleton
     @Provides
@@ -57,11 +57,11 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideRetrofit(okHttpClient: OkHttpClient) =
-       Retrofit.Builder()
+        Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-           .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-           .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
 
     @Singleton
