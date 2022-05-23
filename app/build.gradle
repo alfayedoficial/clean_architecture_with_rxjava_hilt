@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+    id 'kotlin-kapt'
+    id 'kotlin-parcelize'
+    id 'dagger.hilt.android.plugin'
+
 }
 
 android {
@@ -15,6 +19,7 @@ android {
         versionName Android.versionName
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -40,8 +45,32 @@ dependencies {
     implementation Libs.appCompat
     implementation Libs.material
     implementation Libs.constraintLayout
-    implementation 'com.google.android.gms:play-services-maps:18.0.2'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation Libs.googleMap
+    implementation Libs.locationServices
+    implementation Libs.permissionsDispatcher
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    kapt Libs.permissionsDispatcherProcessor
+    implementation Libs.timber
+
+    //Dagger - Hilt
+    def hilt_version = "2.39.1"
+    def hilt_viewModels_version = "1.0.0-alpha03"
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-compiler:$hilt_version"
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_viewModels_version"
+    kapt "androidx.hilt:hilt-compiler:$hilt_viewModels_version"
+
+    implementation Libs.rxVersion
+    implementation Libs.rxAndroid
+    implementation Libs.retrofit
+    implementation Libs.rxAdapter
+    implementation Libs.loggingInterceptor
+    implementation Libs.gsonConverter
+    implementation Libs.gson
+    implementation Libs.fragmentKtx
+    implementation Libs.multidex
+
+
     testImplementation TestLibs.junit
     androidTestImplementation TestLibs.junitExt
     androidTestImplementation TestLibs.espresso

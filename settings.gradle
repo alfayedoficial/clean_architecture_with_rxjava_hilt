@@ -1,13 +1,29 @@
 pluginManagement {
+    ext.hilt_version = "2.39.1"
+    ext.google_services_version = "4.3.10"
+
     repositories {
         gradlePluginPortal()
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
+
+    resolutionStrategy {
+        eachPlugin {
+            if( requested.id.id == 'dagger.hilt.android.plugin') {
+                useModule("com.google.dagger:hilt-android-gradle-plugin:$hilt_version")
+            }else if (requested.id.id == 'com.google.gms.google-services'){
+                useModule("com.google.gms:google-services:$google_services_version")
+            }
+        }
+    }
+
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        maven { url 'https://jitpack.io' }
         google()
         mavenCentral()
     }
