@@ -1,7 +1,9 @@
 package com.fourdev.cleanarchitecturewithrxjavahilt.domain.repo
 
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.DataState
+import com.fourdev.cleanarchitecturewithrxjavahilt.data.api.Test
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.LocationDto
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.RequestLocationDto
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.entity.Restaurant
 import io.reactivex.Single
 
@@ -12,5 +14,5 @@ import io.reactivex.Single
  */
 interface RestaurantRepo {
 
-    fun getRestaurants(locationDto : LocationDto):Single<DataState<List<Restaurant>>>
+    fun getRestaurants(locationDto : RequestLocationDto):Single<DataState<List<Restaurant>>>
 }

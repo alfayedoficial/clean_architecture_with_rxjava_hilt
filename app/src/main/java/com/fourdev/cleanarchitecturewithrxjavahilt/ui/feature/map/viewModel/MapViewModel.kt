@@ -5,8 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.BaseViewModel
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.DataState
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.LocationDto
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.RequestLocationDto
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.entity.Restaurant
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.interactor.GetRestaurants
+import com.google.android.gms.maps.model.Marker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
@@ -24,8 +26,9 @@ class MapViewModel @Inject constructor(private val getRestaurants: GetRestaurant
      val restaurantsState : LiveData<DataState<List<Restaurant>>>
         get() = _restaurantsState
 
+    val markers = HashMap<Marker , Restaurant>()
 
-    fun getRestaurants(locationDto: LocationDto) {
+    fun getRestaurants(locationDto: RequestLocationDto) {
         if (_restaurantsState.value != null)  return
         getRestaurants.execute(locationDto)
             .subscribeOn(Schedulers.io())
@@ -35,5 +38,26 @@ class MapViewModel @Inject constructor(private val getRestaurants: GetRestaurant
             }
             .also { compositeDisposable.add(it) }
     }
+
+    fun resetRestaurantsState() {
+        _restaurantsState.value = null
+    }
+
+    fun getNewRestaurants(restaurants: List<Restaurant>):ArrayList<Restaurant>{
+        val markerToBeDisplayed = ArrayList<Restaurant>()
+        val mainList = markers.values
+        if (!mainList.isNullOrEmpty()){
+            restaurants.forEach {
+                if (!mainList.contains(it)) {
+                    markerToBeDisplayed.add(it)
+                }
+            }
+        }else{
+            markerToBeDisplayed.addAll(restaurants)
+        }
+
+        return markerToBeDisplayed
+    }
+
 
 }

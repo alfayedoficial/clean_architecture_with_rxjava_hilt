@@ -1,13 +1,5 @@
 package com.fourdev.cleanarchitecturewithrxjavahilt.data.interceptor
 
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.API_VERSION
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.CLIENT_ID
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.CLIENT_SECRET
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.QUERY
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.VERSION
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.clientId
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.clientSecret
-import com.fourdev.cleanarchitecturewithrxjavahilt.utils.Constants.query_key
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -23,10 +15,10 @@ class AuthInterceptor : Interceptor{
        val request = chain.request()
         val originalHttpUrl = request.url()
         originalHttpUrl.newBuilder()
-            .addQueryParameter(CLIENT_ID, clientId)
-            .addQueryParameter(CLIENT_SECRET, clientSecret)
-            .addQueryParameter(VERSION, API_VERSION)
-            .addQueryParameter(QUERY, query_key)
+//            .addQueryParameter(CLIENT_ID, clientId)
+//            .addQueryParameter(CLIENT_SECRET, clientSecret)
+//            .addQueryParameter(VERSION, API_VERSION)
+//            .addQueryParameter(QUERY, query_key)
             .build()
 
         val requestBuilder = request.newBuilder().url(originalHttpUrl).build()

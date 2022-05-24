@@ -3,26 +3,27 @@ package com.fourdev.cleanarchitecturewithrxjavahilt.ui.feature.map
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
-import androidx.fragment.app.Fragment
-
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.viewModels
 import com.fourdev.cleanarchitecturewithrxjavahilt.R
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.BaseFragment
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.DataState
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.navigation.AppNavigator
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.navigation.Screen
-import com.fourdev.cleanarchitecturewithrxjavahilt.data.apiResponse.VenuesItem
-import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.LocationDto
+import com.fourdev.cleanarchitecturewithrxjavahilt.databinding.FragmentRestauranttMapBinding
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.RequestLocationDto
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.entity.Restaurant
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.error.Failure
+import com.fourdev.cleanarchitecturewithrxjavahilt.ui.feature.map.drag.IDragCallback
 import com.fourdev.cleanarchitecturewithrxjavahilt.ui.feature.map.viewModel.MapViewModel
-
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -31,6 +32,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import permissions.dispatcher.*
 import timber.log.Timber
@@ -38,13 +40,15 @@ import javax.inject.Inject
 
 @RuntimePermissions
 @AndroidEntryPoint
-class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
+class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener , IDragCallback {
 
     @Inject
     lateinit var appNavigator: AppNavigator
 
     private val mViewModel: MapViewModel by viewModels()
     private var mMap: GoogleMap? = null
+    private var _dataBinding: FragmentRestauranttMapBinding? = null
+    private val dataBinding get() = _dataBinding!!
 
     private val callback = OnMapReadyCallback { googleMap ->
         mMap = googleMap
@@ -65,8 +69,10 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_restaurantt_map, container, false)
+    ): View {
+        _dataBinding = DataBindingUtil.inflate(inflater , R.layout.fragment_restaurantt_map , container , false)
+        dataBinding.lyDraggable.setDragCallback(this)
+        return dataBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -84,9 +90,12 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
             // Do the task needing access to the location
             getCurrentLastKnownLocation{
                 // Do something with the location
-                Timber.e("available location lat , long : %s , %s", it.latitude, it.longitude)
+                Timber.e("available location lat , long : %s,%s", it.latitude,it.longitude)
                 // cal foursquare api
-                mViewModel.getRestaurants(LocationDto(it.latitude, it.longitude))
+                val currentLocation = LatLng(it.latitude, it.longitude)
+                val currentBounds = mMap?.projection?.visibleRegion?.latLngBounds
+                if (currentBounds != null)
+                    mViewModel.getRestaurants(RequestLocationDto(currentLocation , currentBounds))
             }
         }else{
             // Show dialog to enable location
@@ -160,20 +169,69 @@ class RestaurantMapFragment : BaseFragment() , GoogleMap.OnMarkerClickListener {
     private fun observerRestaurants() {
         mViewModel.restaurantsState.observe(viewLifecycleOwner) {
             when(it) {
-                is DataState.Success->{renderMarkers(it.data)}
-                is DataState.Error -> {}
-                is DataState.Loading -> {}
+                is DataState.Success->{
+                    handlingLoading(false)
+                    renderMarkers(it.data)}
+                is DataState.Error -> {
+                    handlingLoading(false)
+                    val message = when (it.exception) {
+                        is Failure.NetworkConnection -> {
+                            "Network Error"
+                        }
+                        is Failure.ServerError.NotFound -> {
+                            "NotFound"
+                        }
+                        is Failure.ServerError.BadRequest -> {
+                            "BadRequest"
+                        }
+                        else -> {
+                            "Something went wrong"
+                        }
+                    }
+
+                    handleError(message)
+                }
+                is DataState.Loading -> {handlingLoading(true)}
             }
         }
     }
 
     private fun renderMarkers(venuesItems :List<Restaurant>){
-        venuesItems.forEach { venue ->
-           val loc = LatLng(venue.latitude!!, venue.longitude!!)
-            mMap?.addMarker(MarkerOptions().position(loc).title(venue.name))
+        val newVenues = mViewModel.getNewRestaurants(venuesItems)
+        newVenues.forEach { venue ->
+            val loc = LatLng(venue.latitude!!, venue.longitude!!)
+            val marker = mMap?.addMarker(MarkerOptions().position(loc).title(venue.name))
             mMap?.moveCamera(CameraUpdateFactory.newLatLng(loc))
-
+            mViewModel.markers[marker]
         }
     }
+
+
+    private fun handlingLoading(status : Boolean){
+        if(status){
+            dataBinding.progressBar.visibility = View.VISIBLE
+        }else{
+            dataBinding.progressBar.visibility = View.GONE
+        }
+    }
+
+
+    private fun handleError(error: String){
+        Snackbar.make(dataBinding.root, error, Snackbar.LENGTH_LONG).show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _dataBinding = null
+    }
+
+    override fun onDrag() {
+        val currentLocation = mMap?.cameraPosition?.target
+        val currentBounds = mMap?.projection?.visibleRegion?.latLngBounds
+        mViewModel.resetRestaurantsState()
+        if (currentBounds != null && currentLocation != null)
+            mViewModel.getRestaurants(RequestLocationDto(currentLocation , currentBounds))
+    }
+
 
 }

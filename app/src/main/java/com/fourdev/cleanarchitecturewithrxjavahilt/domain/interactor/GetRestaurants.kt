@@ -2,6 +2,7 @@ package com.fourdev.cleanarchitecturewithrxjavahilt.domain.interactor
 
 import com.fourdev.cleanarchitecturewithrxjavahilt.core.common.DataState
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.LocationDto
+import com.fourdev.cleanarchitecturewithrxjavahilt.domain.dto.RequestLocationDto
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.entity.Restaurant
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.error.ErrorHandler
 import com.fourdev.cleanarchitecturewithrxjavahilt.domain.error.Failure
@@ -16,7 +17,7 @@ import javax.inject.Inject
  * Class do :
  * Date 5/22/2022 - 9:42 PM
  */
-class GetRestaurants @Inject constructor(private var repo: RestaurantRepo) : UseCase<LocationDto ,Single<DataState<List<Restaurant>>>> , ErrorHandler {
+class GetRestaurants @Inject constructor(private var repo: RestaurantRepo) : UseCase<RequestLocationDto ,Single<DataState<List<Restaurant>>>> , ErrorHandler {
 
     override fun getErrorHandler(throwable: Throwable): Failure {
         return when(throwable) {
@@ -37,7 +38,7 @@ class GetRestaurants @Inject constructor(private var repo: RestaurantRepo) : Use
         }
     }
 
-    override fun execute(parameter: LocationDto): Single<DataState<List<Restaurant>>> {
+    override fun execute(parameter: RequestLocationDto): Single<DataState<List<Restaurant>>> {
         return repo.getRestaurants(parameter).onErrorReturn { failure ->
             DataState.Error(getErrorHandler(failure))
         }
